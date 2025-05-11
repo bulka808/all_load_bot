@@ -10,6 +10,8 @@ import aiohttp
 #####
 import io
 import zipfile
+#####
+import datetime
 # import requests
 # import shutil
 # import os
@@ -38,13 +40,21 @@ funcs: dict[str, Callable[[types.Message], str]] = {
 # словарь со всеми file_id каждого пользователя
 files: dict[int, list[dict[str, str]]] = {}
 
+# функция для вывода логов 
+def log(message: types.Message) -> None:
+    date = datetime.datetime.fromtimestamp(message.date).isoformat()
+    m_txt = message.text or f"({message.content_type})"
+    chat_id = message.chat.id
+    uid = message.from_user.id
+
+    txt = f"[{date}]|UID:{uid}|CID:{chat_id}|{m_txt}"
+    print(txt)
+
 
 # функция с приветствием и краткой справкой
 @bot.message_handler(commands=["start"])
 def start(message: types.Message) -> None:
-
-    uid = message.from_user.id
-    print(f"{uid}\tstart\n")
+    log(message)
 
     msg_text = "Для начала работы просто отправьте нужные файлы боту," \
     " после чего удостоверьтесь что все из них загружены с помощью /stat\n\n" \
@@ -56,10 +66,9 @@ def start(message: types.Message) -> None:
 # основная функция приёма сообщений
 @bot.message_handler(content_types=["photo", "video", "document", "animation", ])
 def files_get(message: types.Message) -> None:
-
+    log(message)
     uid = message.from_user.id
-    print(f"{uid}\t{message.content_type}\n")
-
+    
     file = funcs[message.content_type](message)
     
     # если uid еще нет в словаре, добавляем uid c пустым списком
@@ -75,14 +84,14 @@ def files_get(message: types.Message) -> None:
         }
         files[uid].append(obj)
     
-
+# загрузка всех файлов
 @bot.message_handler(commands= ['load'])
 def load(message: types.Message) -> None:
-    # тут будет загрузка ВСЕХ файлов
+    log(message)
+
     global files
     
     uid = message.from_user.id
-    print(f"{uid}\tload\n")
 
     if(uid not in files): files[uid] = []
 
@@ -145,8 +154,9 @@ async def download_file(session, file_info, idx):
 # очистка загруженных файлов пользователя
 @bot.message_handler(commands= ['reset'])
 def reset(message: types.Message) -> None:
+    log(message)
+
     uid = message.from_user.id
-    print(f"{uid}\treset\n")
 
     # если uid есть то очищаем то что было внутри
     if(uid in files): files[uid].clear()
@@ -157,8 +167,9 @@ def reset(message: types.Message) -> None:
 # вывод количества загруженных файлов
 @bot.message_handler(commands=["stat"])
 def stat(message: types.Message) -> None:
+    log(message)
+
     uid = message.from_user.id
-    print(f"{uid}\tstat\n")
 
     if(uid not in files): files[uid] = []
 
