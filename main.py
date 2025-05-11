@@ -1,19 +1,32 @@
 import telebot
 from telebot import types
+#####
 import json
+#####
 from typing import Callable
-import requests
+#####
 import asyncio
 import aiohttp
-
-# import shutil
-# import os
+#####
 import io
 import zipfile
+# import requests
+# import shutil
+# import os
 
+
+# загрузка cfg, пока что только токен
 with open("config.json", "r", encoding="UTF-8") as f:
     cfg = json.load(f)
 bot = telebot.TeleBot(cfg["TOKEN"])
+
+# загрузка команд
+with open("commands.json", "r", encoding="UTF-8") as f:
+    commands: dict[str, str] = json.load(f)
+
+list_commands = [types.BotCommand(command=cmd, description=desc) for cmd, desc in commands.items()]
+bot.set_my_commands(list_commands)
+print("Команды загружены из commands.json")
 
 # функции получения file_id
 funcs: dict[str, Callable[[types.Message], str]] = {
@@ -25,9 +38,24 @@ funcs: dict[str, Callable[[types.Message], str]] = {
 # словарь со всеми file_id каждого пользователя
 files: dict[int, list[dict[str, str]]] = {}
 
+
+# функция с приветствием и краткой справкой
+@bot.message_handler(commands=["start"])
+def start(message: types.Message) -> None:
+
+    uid = message.from_user.id
+    print(f"{uid}\tstart\n")
+
+    msg_text = "Для начала работы просто отправьте нужные файлы боту," \
+    " после чего удостоверьтесь что все из них загружены с помощью /stat\n\n" \
+    "Для выгрузки всех файлов в виде zip-архива используйте /load"
+
+    bot.reply_to(message=message, text=msg_text)
+    
+
+# основная функция приёма сообщений
 @bot.message_handler(content_types=["photo", "video", "document", "animation", ])
-def photo_get(message: types.Message) -> None:
-    # добавление file_id каждого фото в массив, если там его еще нет
+def files_get(message: types.Message) -> None:
 
     uid = message.from_user.id
     print(f"{uid}\t{message.content_type}\n")
@@ -56,16 +84,14 @@ def load(message: types.Message) -> None:
     uid = message.from_user.id
     print(f"{uid}\tload\n")
 
-
     if(uid not in files): files[uid] = []
 
     # Запуск асинхронной задачи
     if(len(files[uid]) <= 0):
         bot.reply_to(message=message, text=f"У вас загружено 0 файлов")
-        return None
+        return
 
     asyncio.run(handle_files_async(message, files[uid]))
-
 
 async def handle_files_async(message: types.Message, user_files):
     #временное сообщение чтобы пользователь видел что бот жив
@@ -115,6 +141,7 @@ async def download_file(session, file_info, idx):
             print(f"Ошибка при скачивании файла {file_id}: статус {resp.status}")
             return (f"file_{idx}.{ext}", b"")
 
+
 # очистка загруженных файлов пользователя
 @bot.message_handler(commands= ['reset'])
 def reset(message: types.Message) -> None:
@@ -124,7 +151,8 @@ def reset(message: types.Message) -> None:
     # если uid есть то очищаем то что было внутри
     if(uid in files): files[uid].clear()
 
-    bot.reply_to(message=message, text="файлы очищены")
+    bot.reply_to(message=message, text="Файлы очищены.")
+
 
 # вывод количества загруженных файлов
 @bot.message_handler(commands=["stat"])
@@ -135,6 +163,7 @@ def stat(message: types.Message) -> None:
     if(uid not in files): files[uid] = []
 
     bot.reply_to(message=message, text=f"Загружено {len(files[uid])} файлов")
+
 
 print(f"start: \"{bot.get_me().full_name}\"")
 bot.infinity_polling()
