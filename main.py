@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 # import requests
 # import shutil
 
-load_dotenv(".env.txt")
+load_dotenv()
 TOKEN = os.getenv("TOKEN")
-# перешел на .env, который почему-то странно работат и требует указать путь
+
 # загрузка cfg, пока что только токен
 # with open("config.json", "r", encoding="UTF-8") as f:
 #     cfg = json.load(f)
