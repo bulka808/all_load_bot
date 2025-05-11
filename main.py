@@ -86,11 +86,11 @@ def load(message: types.Message) -> None:
 
     if(uid not in files): files[uid] = []
 
-    # Запуск асинхронной задачи
+   
     if(len(files[uid]) <= 0):
         bot.reply_to(message=message, text=f"У вас загружено 0 файлов")
         return
-
+    # Запуск асинхронной задачи
     asyncio.run(handle_files_async(message, files[uid]))
 
 async def handle_files_async(message: types.Message, user_files):
