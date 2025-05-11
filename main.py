@@ -12,15 +12,20 @@ import io
 import zipfile
 #####
 import datetime
+#####
+import os
+from dotenv import load_dotenv
 # import requests
 # import shutil
-# import os
 
-
+load_dotenv(".env.txt")
+TOKEN = os.getenv("TOKEN")
+# перешел на .env, который почему-то странно работат и требует указать путь
 # загрузка cfg, пока что только токен
-with open("config.json", "r", encoding="UTF-8") as f:
-    cfg = json.load(f)
-bot = telebot.TeleBot(cfg["TOKEN"])
+# with open("config.json", "r", encoding="UTF-8") as f:
+#     cfg = json.load(f)
+bot = telebot.TeleBot(TOKEN)
+
 
 # загрузка команд
 with open("commands.json", "r", encoding="UTF-8") as f:
@@ -139,7 +144,7 @@ async def download_file(session, file_info, idx):
     path = file_info["path"]
     ext = file_info["ext"]
 
-    url = f"https://api.telegram.org/file/bot{cfg['TOKEN']}/{path}"
+    url = f"https://api.telegram.org/file/bot{TOKEN}/{path}"
 
     print(f"Скачиваю {file_id}.{ext}")
     async with session.get(url) as resp:
